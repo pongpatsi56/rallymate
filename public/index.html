@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>จัดก๊วนแบด</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand">🏸 จัดก๊วนแบด</a>
+    <span id="role-badge" class="role" hidden></span>
+  </header>
+
+  <main id="home" class="container" hidden>
+    <section class="card">
+      <h1>สร้างก๊วนใหม่</h1>
+      <form id="create-form" class="stack">
+        <label>ชื่อก๊วน
+          <input name="name" required maxlength="40" value="ก๊วนแบดวันนี้">
+        </label>
+        <label>จำนวนคอร์ท
+          <input name="courtCount" type="number" min="1" max="12" value="2" required>
+        </label>
+        <label>โหมดเริ่มต้น
+          <select name="mode">
+            <option value="fair" selected>ยุติธรรม (หมุนเวียนทุกแมตช์)</option>
+            <option value="champion">แชมป์ (ผู้ชนะอยู่ต่อได้สูงสุด 2 ตา)</option>
+          </select>
+        </label>
+        <label>รายชื่อผู้เล่น (บรรทัดละ 1 คน)
+          <textarea name="players" rows="8" placeholder="เอ&#10;บี&#10;ซี&#10;ดี"></textarea>
+        </label>
+        <button class="btn primary" type="submit">สร้างก๊วน</button>
+      </form>
+    </section>
+  </main>
+
+  <main id="session" class="container" hidden>
+    <section id="session-header" class="card"></section>
+    <section id="host-tools" class="card host-only" hidden>
+      <h2>เพิ่มผู้เล่น</h2>
+      <form id="add-player-form" class="row">
+        <input name="name" required maxlength="40" placeholder="ชื่อผู้เล่นใหม่" aria-label="ชื่อผู้เล่นใหม่">
+        <button class="btn primary" type="submit">เพิ่ม</button>
+      </form>
+      <div id="share-links" class="share"></div>
+    </section>
+    <section id="courts" class="courts"></section>
+    <div class="columns">
+      <section id="queue" class="card"></section>
+      <section id="players" class="card"></section>
+    </div>
+    <section id="events" class="card"></section>
+  </main>
+
+  <dialog id="dialog">
+    <form method="dialog" id="dialog-form">
+      <h2 id="dialog-title"></h2>
+      <div id="dialog-body"></div>
+      <div class="dialog-actions">
+        <button class="btn" value="cancel" formnovalidate>ยกเลิก</button>
+        <button class="btn primary" value="ok" id="dialog-ok">ยืนยัน</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

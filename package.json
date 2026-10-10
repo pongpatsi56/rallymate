@@ -1,0 +1,14 @@
+{
+  "name": "badminton-matchmaking",
+  "version": "1.0.0",
+  "description": "Badminton session matchmaking with Fair/Champion modes and emergency host controls",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}
