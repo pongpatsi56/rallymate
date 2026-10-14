@@ -7,6 +7,7 @@ const $ = (sel) => document.querySelector(sel);
 const T = {
   mode: { fair: 'โหมดยุติธรรม', champion: 'โหมดแชมป์' },
   modeShort: { fair: 'ยุติธรรม', champion: 'แชมป์' },
+  skill: { 1: 'มือใหม่', 2: 'ระดับกลาง', 3: 'มือเก่ง' },
   sessionStatus: { setup: 'เตรียมก๊วน', active: 'กำลังเล่น', ended: 'จบก๊วนแล้ว' },
   matchStatus: { scheduled: 'จัดทีมแล้ว รอเริ่ม', in_progress: 'กำลังแข่ง', completed: 'จบแล้ว', cancelled: 'ยกเลิก' },
   playerStatus: {
@@ -233,8 +234,30 @@ function renderHeader(s) {
     ${pendingCourts.length ? `<div class="notice">⏳ รอเปลี่ยนโหมด: ${pendingCourts.map((c) => `${esc(c.name)} → ${T.modeShort[c.pendingMode]}`).join(', ')} (มีผลหลังแมตช์ปัจจุบันจบ)</div>` : ''}
     <p class="muted">${s.mode === 'champion'
       ? 'โหมดแชมป์: ทีมที่ชนะอยู่ต่อได้สูงสุด 2 ตาติดต่อกัน ผู้ท้าชิงที่ชนะจะเป็นแชมป์ใหม่'
-      : 'โหมดยุติธรรม: ทั้งสองทีมออกหลังจบแมตช์ คนที่เล่นน้อยได้ลงก่อน'}</p>`;
+      : 'โหมดยุติธรรม: ทั้งสองทีมออกหลังจบแมตช์ คนที่เล่นน้อยได้ลงก่อน'}</p>
+    ${renderSettings(s, host)}`;
 }
+
+function renderSettings(s, host) {
+  const on = s.config?.mixGroups === true;
+  const help = 'ช่วยให้ได้เล่นกับคนหลากหลายขึ้น โดยอาจผ่อนลำดับคิวเล็กน้อย แต่ยังเน้นความแฟร์เป็นหลัก';
+  if (!host) {
+    return `<div class="settings"><div class="row"><span class="muted">ตั้งค่าก๊วน:</span><span>คละกลุ่มผู้เล่น (Mix Groups)</span><span class="badge status-badge">${on ? 'เปิด' : 'ปิด'}</span></div></div>`;
+  }
+  return `<div class="settings">
+    <h2>ตั้งค่าก๊วน</h2>
+    <label class="switch">
+      <input type="checkbox" data-setting="mixGroups" ${on ? 'checked' : ''}>
+      <span>คละกลุ่มผู้เล่น (Mix Groups) <span class="badge status-badge">${on ? 'เปิด' : 'ปิด'}</span></span>
+    </label>
+    <p class="muted">${help}</p>
+  </div>`;
+}
+
+const LATE_JOIN_NOTE = 'ผู้เล่นเข้าร่วมระหว่าง Session — ระบบปรับลำดับคิวให้เหมาะสมแล้ว';
+const lateJoinTag = (p) => ((p.fairnessBaseline ?? 0) > 0
+  ? ` <span class="tag" title="${LATE_JOIN_NOTE}" aria-label="${LATE_JOIN_NOTE}">มาระหว่างก๊วน</span>`
+  : '');
 
 function renderCourts(s) {
   $('#courts').innerHTML = s.courts.map((court) => renderCourt(s, court)).join('');
@@ -297,10 +320,10 @@ function renderCourt(s, court) {
 function renderQueue(s) {
   const rows = s.priorityQueue.map((id) => {
     const p = s.players[id];
-    return `<li>${esc(p.name)} <span class="muted">· เล่น ${p.gamesPlayed} · รอ ${fmtMinutes(s.serverTime - p.queuedAt)}</span></li>`;
+    return `<li>${esc(p.name)}${lateJoinTag(p)} <span class="muted">· ${T.skill[p.skill ?? 2]} · เล่น ${p.gamesPlayed} · รอ ${fmtMinutes(s.serverTime - p.queuedAt)}</span></li>`;
   });
   $('#queue').innerHTML = `<h2>คิวรอลงสนาม (${rows.length})</h2>
-    <p class="muted">เรียงตามความยุติธรรม: เล่นน้อยก่อน แล้วตามลำดับคิว</p>
+    <p class="muted">เรียงตามความยุติธรรม: เล่นน้อยก่อน แล้วตามลำดับคิว${s.priorityQueue.some((id) => (s.players[id].fairnessBaseline ?? 0) > 0) ? ' · คนที่มาระหว่างก๊วนเริ่มนับเท่ากับคนที่เล่นน้อยที่สุดในตอนนั้น' : ''}</p>
     ${rows.length ? `<ol class="queue">${rows.join('')}</ol>` : '<p class="muted">ไม่มีคนรอคิว</p>'}`;
 }
 
@@ -317,15 +340,22 @@ function renderPlayers(s) {
   };
   $('#players').innerHTML = `<h2>ผู้เล่นทั้งหมด</h2>
     <div class="table-wrap"><table>
-      <thead><tr><th>ชื่อ</th><th>สถานะ</th><th>เล่น</th><th>ชนะ-แพ้</th><th>รอรวม</th>${host ? '<th></th>' : ''}</tr></thead>
+      <thead><tr><th>ชื่อ</th><th>ฝีมือ</th><th>สถานะ</th><th>เล่น</th><th>ชนะ-แพ้</th><th>รอรวม</th>${host ? '<th></th>' : ''}</tr></thead>
       <tbody>${players.map((p) => {
         const wait = p.totalWaitMs + (p.status === 'waiting' && s.status !== 'ended' ? s.serverTime - p.queuedAt : 0);
         return `<tr>
-          <td>${esc(p.name)}</td><td>${T.playerStatus[p.status]}</td>
+          <td>${esc(p.name)}${lateJoinTag(p)}</td><td>${skillCell(p, host)}</td><td>${T.playerStatus[p.status]}</td>
           <td class="num">${p.gamesPlayed}</td><td class="num">${p.wins}-${p.losses}</td><td class="num">${fmtMinutes(wait)}</td>
           ${actions(p)}</tr>`;
       }).join('')}</tbody>
     </table></div>`;
+}
+
+function skillCell(p, host) {
+  const skill = p.skill ?? 2;
+  if (!host || p.status === 'left') return T.skill[skill];
+  return `<select data-skill-player="${p.id}" aria-label="ระดับฝีมือของ ${esc(p.name)}">${[1, 2, 3]
+    .map((v) => `<option value="${v}" ${v === skill ? 'selected' : ''}>${T.skill[v]}</option>`).join('')}</select>`;
 }
 
 function describeEvent(e) {
@@ -350,7 +380,9 @@ function describeEvent(e) {
     case 'CHAMPION_OVERRIDE_REQUESTED': return `${court(d.courtId)}: ผู้จัดสั่ง “${overrideLabel(d.action)}”`;
     case 'CHAMPION_OVERRIDE_APPLIED': return `${court(d.courtId)}: ดำเนินการคำสั่งผู้จัดแล้ว (ไม่นับเป็นแพ้/ชนะ)`;
     case 'CHAMPION_OVERRIDE_WITHDRAWN': return `${court(d.courtId)}: ยกเลิกคำสั่งจัดการแชมป์`;
-    case 'PLAYER_ADDED': return `เพิ่มผู้เล่น ${esc(d.name)}${d.midSession ? ' (ระหว่างก๊วน)' : ''}`;
+    case 'PLAYER_ADDED': return `เพิ่มผู้เล่น ${esc(d.name)}${d.skill ? ` · ${T.skill[d.skill]}` : ''}${d.midSession ? ' (ระหว่างก๊วน)' : ''}`;
+    case 'PLAYER_SKILL_CHANGED': return `${pname(d.playerId)} เปลี่ยนระดับฝีมือเป็น${T.skill[d.to]}`;
+    case 'SETTINGS_CHANGED': return `ผู้จัด${d.mixGroups?.to ? 'เปิด' : 'ปิด'}คละกลุ่มผู้เล่น (Mix Groups) · มีผลตั้งแต่การจัดแมตช์ครั้งถัดไป`;
     case 'PLAYER_UNAVAILABLE': return `${pname(d.playerId)} พักชั่วคราว`;
     case 'PLAYER_RETURNED': return `${pname(d.playerId)} กลับเข้าคิว`;
     case 'PLAYER_REMOVED': return `${pname(d.playerId)} กลับบ้าน`;
@@ -530,7 +562,11 @@ document.addEventListener('click', (ev) => {
 $('#create-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const fd = new FormData(ev.target);
-  const playerNames = String(fd.get('players')).split('\n').map((n) => n.trim()).filter(Boolean);
+  // "ชื่อ, 3" sets a skill level; anything else is just a name (default skill 2).
+  const playerNames = String(fd.get('players')).split('\n').map((n) => n.trim()).filter(Boolean).map((line) => {
+    const m = line.match(/^(.*?)\s*,\s*([123])$/);
+    return m ? { name: m[1], skill: Number(m[2]) } : line;
+  });
   const btn = ev.target.querySelector('button');
   btn.disabled = true;
   try {
@@ -554,8 +590,24 @@ $('#add-player-form').addEventListener('submit', async (ev) => {
   const input = ev.target.elements.name;
   const name = input.value.trim();
   if (!name) return;
-  const json = await hostAction('POST', '/players', { name }, `เพิ่ม ${name} เข้าคิวแล้ว`);
+  const skill = Number(ev.target.elements.skill.value);
+  const json = await hostAction('POST', '/players', { name, skill }, `เพิ่ม ${name} เข้าคิวแล้ว`);
   if (json) input.value = '';
+});
+
+document.addEventListener('change', async (ev) => {
+  const setting = ev.target.closest('[data-setting="mixGroups"]');
+  if (setting && isHost()) {
+    const on = setting.checked;
+    const json = await hostAction('PUT', '/settings', { mixGroups: on },
+      on ? 'เปิดคละกลุ่มผู้เล่นแล้ว · มีผลตั้งแต่การจัดแมตช์ครั้งถัดไป' : 'ปิดคละกลุ่มผู้เล่นแล้ว · กลับไปจัดตามคิวปกติ');
+    if (!json) setting.checked = !on;
+    return;
+  }
+  const el = ev.target.closest('[data-skill-player]');
+  if (!el || !isHost()) return;
+  const p = state.session.players[el.dataset.skillPlayer];
+  await hostAction('PUT', `/players/${p.id}/skill`, { skill: Number(el.value) }, `${p.name}: ${T.skill[el.value]}`);
 });
 
 window.addEventListener('hashchange', route);

@@ -20,6 +20,7 @@ const COMMAND_ROUTES = [
   ['POST', /^\/start$/, () => ({ type: 'startSession' })],
   ['POST', /^\/end$/, (_m, b) => ({ type: 'endSession', confirm: b.confirm })],
   ['PUT', /^\/mode$/, (_m, b) => ({ type: 'setMode', mode: b.mode })],
+  ['PUT', /^\/settings$/, (_m, b) => ({ type: 'updateSettings', mixGroups: b.mixGroups })],
   ['POST', /^\/courts\/([\w-]+)\/next$/, (m) => ({ type: 'scheduleNextMatch', courtId: m[1] })],
   ['POST', /^\/courts\/([\w-]+)\/champion-override$/, (m, b) => ({
     type: 'championOverride', courtId: m[1], action: b.action, confirm: b.confirm,
@@ -37,7 +38,8 @@ const COMMAND_ROUTES = [
     outStatus: b.outStatus,
     confirm: b.confirm,
   })],
-  ['POST', /^\/players$/, (_m, b) => ({ type: 'addPlayer', name: b.name })],
+  ['POST', /^\/players$/, (_m, b) => ({ type: 'addPlayer', name: b.name, skill: b.skill })],
+  ['PUT', /^\/players\/([\w-]+)\/skill$/, (m, b) => ({ type: 'setPlayerSkill', playerId: m[1], skill: b.skill })],
   ['POST', /^\/players\/([\w-]+)\/unavailable$/, (m, b) => ({ type: 'markUnavailable', playerId: m[1], confirm: b.confirm })],
   ['POST', /^\/players\/([\w-]+)\/return$/, (m) => ({ type: 'returnToQueue', playerId: m[1] })],
   ['DELETE', /^\/players\/([\w-]+)$/, (m, b) => ({ type: 'removePlayer', playerId: m[1], confirm: b.confirm })],
@@ -68,6 +70,7 @@ async function handleApi(req, res, url, store) {
       courtCount: body.courtCount === undefined ? 1 : Number(body.courtCount),
       playerNames: body.playerNames ?? [],
       mode: body.mode ?? 'fair',
+      mixGroups: body.mixGroups ?? false,
     });
     return sendJson(res, 201, { session: publicView(state, store.clock()), hostToken });
   }

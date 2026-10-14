@@ -9,6 +9,9 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\"",
+    "sim": "node sim/cli.js",
+    "sim:quick": "node sim/cli.js --quick",
+    "sim:tune": "node sim/tune.js && node sim/tune.js --round2"
   }
 }

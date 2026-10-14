@@ -50,6 +50,8 @@ h1 { font-size: 1.4rem; } h2 { font-size: 1.1rem; } h3 { font-size: 1rem; }
 label { display: grid; gap: .25rem; font-weight: 600; font-size: .9rem; }
 input, select, textarea { font: inherit; padding: .55rem .7rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; }
 .row input { flex: 1; min-width: 0; width: auto; }
+.row select.skill-select, td select { width: auto; }
+td select { padding: .2rem .4rem; }
 .btn { font: inherit; font-weight: 600; padding: .5rem .9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer; min-height: 40px; }
 .btn:hover:not(:disabled) { filter: brightness(.97); }
 .btn:disabled { opacity: .55; cursor: progress; }
@@ -61,6 +63,11 @@ input, select, textarea { font: inherit; padding: .55rem .7rem; border-radius: 8
 .mode-fair { background: var(--fair-bg); color: var(--fair); }
 .mode-champion { background: var(--champion-bg); color: var(--champion); }
 .status-badge { background: var(--surface-2); color: var(--muted); }
+.settings { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--border); display: grid; gap: .35rem; }
+.settings h2 { margin: 0; }
+.switch { display: flex; align-items: center; gap: .6rem; font-weight: 600; cursor: pointer; }
+.switch input { width: 1.2rem; height: 1.2rem; accent-color: var(--primary); }
+.tag { font-size: .72rem; font-weight: 600; padding: .05rem .45rem; border-radius: 99px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; cursor: help; }
 .notice { background: var(--warn-bg); color: var(--warn-text); padding: .5rem .75rem; border-radius: 8px; font-size: .9rem; margin: .5rem 0; }
 .muted { color: var(--muted); font-size: .9rem; }
 .session-head { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-start; }

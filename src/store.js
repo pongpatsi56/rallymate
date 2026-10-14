@@ -20,7 +20,8 @@ export class SessionStore {
 
   create(input) {
     const id = randomUUID().replace(/-/g, '').slice(0, 12);
-    const state = createSession({ ...input, id, now: this.clock() });
+    const seed = input.seed ?? randomBytes(4).readUInt32LE(0);
+    const state = createSession({ ...input, id, seed, now: this.clock() });
     const hostToken = randomBytes(24).toString('base64url');
     this.sessions.set(id, { state, hostToken, idempotency: new Map() });
     this.#persist();

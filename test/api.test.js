@@ -153,6 +153,64 @@ describe('HTTP API', () => {
     assert.equal(r.json.session.players[pid].status, 'left');
   });
 
+  it('accepts skill levels on create/add and lets the host change them', async () => {
+    const { status, json } = await api('POST', '/api/sessions', {
+      body: { name: 'ฝีมือ', courtCount: 1, playerNames: [{ name: 'เก่ง', skill: 3 }, 'กลาง', { name: 'ใหม่', skill: 1 }, 'อีกคน'] },
+    });
+    assert.equal(status, 201);
+    const id = json.session.id;
+    const token = json.hostToken;
+    assert.deepEqual(Object.values(json.session.players).map((p) => p.skill), [3, 2, 1, 2]);
+    let r = await api('POST', `/api/sessions/${id}/players`, { token, body: { name: 'มาสาย', skill: 1 } });
+    const pid = r.json.result.playerId;
+    assert.equal(r.json.session.players[pid].skill, 1);
+    r = await api('PUT', `/api/sessions/${id}/players/${pid}/skill`, { token, body: { skill: 3 } });
+    assert.equal(r.json.session.players[pid].skill, 3);
+    r = await api('PUT', `/api/sessions/${id}/players/${pid}/skill`, { token, body: { skill: 9 } });
+    assert.equal(r.status, 400);
+    r = await api('PUT', `/api/sessions/${id}/players/${pid}/skill`, { body: { skill: 1 } });
+    assert.equal(r.status, 401);
+  });
+
+  it('Mix Groups setting: default OFF, host-only toggle, visible to viewers, idempotent and version-checked', async () => {
+    const { id, token, s } = await newSession();
+    let r = await api('GET', s(''));
+    assert.equal(r.json.session.config.mixGroups, false);
+    r = await api('PUT', s('/settings'), { body: { mixGroups: true } });
+    assert.equal(r.status, 401);
+    r = await api('PUT', s('/settings'), { body: { mixGroups: true }, token: 'wrong' });
+    assert.equal(r.status, 403);
+    const v = (await api('GET', s(''))).json.session.version;
+    const headers = { 'Idempotency-Key': 'mix-on', 'If-Match': String(v) };
+    const first = await api('PUT', s('/settings'), { token, body: { mixGroups: true }, headers });
+    assert.equal(first.status, 200);
+    assert.equal(first.json.session.config.mixGroups, true);
+    const replay = await api('PUT', s('/settings'), { token, body: { mixGroups: true }, headers });
+    assert.equal(replay.json.replayed, true);
+    assert.equal(replay.json.session.version, first.json.session.version);
+    const stale = await api('PUT', s('/settings'), { token, body: { mixGroups: false }, headers: { 'If-Match': String(v) } });
+    assert.equal(stale.status, 409);
+    assert.equal(stale.json.error.code, 'VERSION_CONFLICT');
+    r = await api('PUT', s('/settings'), { token, body: { mixGroups: 'on' } });
+    assert.equal(r.status, 400);
+    r = await api('GET', `/api/sessions/${id}`);
+    assert.equal(r.json.role, 'viewer');
+    assert.equal(r.json.session.config.mixGroups, true, 'viewers can see the setting');
+  });
+
+  it('exposes the late-joiner baseline without changing real games played', async () => {
+    const { s, token } = await newSession({ players: 4 });
+    for (let i = 0; i < 2; i++) {
+      const { json } = await api('POST', s('/courts/c1/next'), { token });
+      await api('POST', s(`/matches/${json.result.matchId}/start`), { token });
+      await api('POST', s(`/matches/${json.result.matchId}/result`), { token, body: { winner: 'A' } });
+    }
+    const r = await api('POST', s('/players'), { token, body: { name: 'มาสาย' } });
+    const p = r.json.session.players[r.json.result.playerId];
+    assert.equal(p.gamesPlayed, 0);
+    assert.equal(p.fairnessBaseline, 2);
+  });
+
   it('substitutes and overrides champions through the API', async () => {
     const { s, token } = await newSession({ mode: 'champion' });
     let r = await api('POST', s('/courts/c1/next'), { token });

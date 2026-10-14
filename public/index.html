@@ -28,9 +28,10 @@
             <option value="champion">แชมป์ (ผู้ชนะอยู่ต่อได้สูงสุด 2 ตา)</option>
           </select>
         </label>
-        <label>รายชื่อผู้เล่น (บรรทัดละ 1 คน)
-          <textarea name="players" rows="8" placeholder="เอ&#10;บี&#10;ซี&#10;ดี"></textarea>
+        <label>รายชื่อผู้เล่น (บรรทัดละ 1 คน · ใส่ระดับฝีมือได้ เช่น “บี, 3”)
+          <textarea name="players" rows="8" placeholder="เอ&#10;บี, 3&#10;ซี, 1&#10;ดี"></textarea>
         </label>
+        <p class="muted">ระดับฝีมือ: 1 = มือใหม่ · 2 = ระดับกลาง (ค่าเริ่มต้น) · 3 = มือเก่ง — ใช้จัดทีมให้สูสี ไม่มีผลกับลำดับคิว</p>
         <button class="btn primary" type="submit">สร้างก๊วน</button>
       </form>
     </section>
@@ -42,6 +43,11 @@
       <h2>เพิ่มผู้เล่น</h2>
       <form id="add-player-form" class="row">
         <input name="name" required maxlength="40" placeholder="ชื่อผู้เล่นใหม่" aria-label="ชื่อผู้เล่นใหม่">
+        <select name="skill" aria-label="ระดับฝีมือ" class="skill-select">
+          <option value="1">มือใหม่</option>
+          <option value="2" selected>ระดับกลาง</option>
+          <option value="3">มือเก่ง</option>
+        </select>
         <button class="btn primary" type="submit">เพิ่ม</button>
       </form>
       <div id="share-links" class="share"></div>
